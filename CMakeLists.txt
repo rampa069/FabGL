@@ -14,7 +14,11 @@ idf_component_register(SRC_DIRS src
                                 src/network
                        REQUIRES fatfs
                                 spiffs
-                                esp_adc_cal
+                                esp_adc
                                 ulp
                                 nvs_flash
-                                soc)
+                                soc
+                                esp_wifi
+                                esp_driver_i2s
+                                esp_driver_i2c
+                                driver)
