@@ -49,6 +49,8 @@
 #include "soc/i2s_struct.h"
 #include "soc/sens_struct.h"
 #include "esp_timer.h"
+#include "driver/dac_oneshot.h"
+#include "driver/sdm.h"
 
 #include "fabglconf.h"
 #include "fabutils.h"
@@ -525,6 +527,9 @@ private:
   bool                m_initDone;
   
   esp_timer_handle_t  m_timerHandle;
+
+  dac_oneshot_handle_t m_dac_handle;
+  sdm_channel_handle_t m_sdm_handle;
   
   #ifdef FABGL_EMULATED
   SDL_AudioDeviceID   m_device;

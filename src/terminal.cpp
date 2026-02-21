@@ -3696,14 +3696,21 @@ void Terminal::consumeFabGLSeq()
     //    GPIONUM (text)     : '32'...'39'
     case FABGLEXTX_SETUPADC:
     {
-      auto width   = (adc_bits_width_t) (extGetIntParam() - 9);
+      auto bitwidth = (adc_bitwidth_t) (extGetIntParam() - 9 + ADC_BITWIDTH_9);
       extGetByteParam();  // ';'
-      auto atten   = (adc_atten_t) extGetIntParam();
+      auto atten    = (adc_atten_t) extGetIntParam();
       extGetByteParam();  // ';'
-      auto channel = ADC1_GPIO2Channel((gpio_num_t)extGetIntParam());
+      auto channel  = ADC1_GPIO2Channel((gpio_num_t)extGetIntParam());
       extGetByteParam();  // FABGLEXT_ENDCODE
-      adc1_config_width(width);
-      adc1_config_channel_atten(channel, atten);
+      {
+        static adc_oneshot_unit_handle_t s_adc1_hdl = NULL;
+        if (s_adc1_hdl == NULL) {
+          adc_oneshot_unit_init_cfg_t unit_cfg = { .unit_id = ADC_UNIT_1, .ulp_mode = ADC_ULP_MODE_DISABLE };
+          adc_oneshot_new_unit(&unit_cfg, &s_adc1_hdl);
+        }
+        adc_oneshot_chan_cfg_t chan_cfg = { .atten = atten, .bitwidth = bitwidth };
+        adc_oneshot_config_channel(s_adc1_hdl, channel, &chan_cfg);
+      }
       break;
     }
 
@@ -3724,7 +3731,14 @@ void Terminal::consumeFabGLSeq()
     //       '0'
     case FABGLEXTX_READADC:
     {
-      auto val = adc1_get_raw(ADC1_GPIO2Channel((gpio_num_t)extGetIntParam()));
+      static adc_oneshot_unit_handle_t s_adc1_hdl_rd = NULL;
+      if (s_adc1_hdl_rd == NULL) {
+        adc_oneshot_unit_init_cfg_t unit_cfg = { .unit_id = ADC_UNIT_1, .ulp_mode = ADC_ULP_MODE_DISABLE };
+        adc_oneshot_new_unit(&unit_cfg, &s_adc1_hdl_rd);
+      }
+      auto channel = ADC1_GPIO2Channel((gpio_num_t)extGetIntParam());
+      int val = 0;
+      adc_oneshot_read(s_adc1_hdl_rd, channel, &val);
       extGetByteParam(); // FABGLEXT_ENDCODE
       send(FABGLEXT_REPLYCODE);
       send(toupper(digit2hex((val & 0xF00) >> 8)));

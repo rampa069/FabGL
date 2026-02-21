@@ -49,7 +49,7 @@ namespace fabgl {
 
 
 #define MCP_SPI_FREQ  10000000   // it seems to work up to 23000000!! (but datasheet specifies 10000000)
-#define MCP_DMACHANNEL       2
+#define MCP_DMACHANNEL       SPI_DMA_CH_AUTO
 
 
 #define MCP_MAXDEVICES       2
@@ -173,7 +173,7 @@ public:
    * @param CSActiveState CS active state (-1 default, depends by the board)
    * @param host SPI host
    */
-  bool begin(int MISO = -1, int MOSI = -1, int CLK = -1, int CS = -1, int CSActiveState = -1, int host = HSPI_HOST);
+  bool begin(int MISO = -1, int MOSI = -1, int CLK = -1, int CS = -1, int CSActiveState = -1, int host = SPI2_HOST);
 
   /**
    * @brief Deinitializes MCP23S17 driver

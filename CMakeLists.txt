@@ -21,4 +21,10 @@ idf_component_register(SRC_DIRS src
                                 esp_wifi
                                 esp_driver_i2s
                                 esp_driver_i2c
-                                driver)
+                                esp_driver_dac
+                                esp_driver_sdm
+                                esp_hw_support
+                                 esp_rom
+                                 esp_timer
+                                 esp_http_client
+                                 driver)

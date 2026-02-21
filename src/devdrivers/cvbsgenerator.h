@@ -37,6 +37,7 @@
 #endif
 #include "soc/i2s_struct.h"
 #include "soc/sens_struct.h"
+#include "driver/dac_oneshot.h"
 
 #include "fabglconf.h"
 
@@ -204,6 +205,7 @@ private:
   
   
   intr_handle_t                 m_isr_handle;
+  dac_oneshot_handle_t          m_dac_handle[2]; // [0]=DAC_CHAN_0(GPIO25), [1]=DAC_CHAN_1(GPIO26)
   static volatile int16_t       s_visibleSamplesCount;          // visible samples in a line
   static volatile int16_t       s_firstVisibleSample;           // first visible sample (0...)
   CVBSDrawScanlineCallback      m_drawScanlineCallback;

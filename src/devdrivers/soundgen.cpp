@@ -33,13 +33,11 @@
 #include <ctype.h>
 #include <math.h>
 
-#include "driver/dac.h"
 #include "soc/i2s_reg.h"
-#include "driver/periph_ctrl.h"
+#include "esp_private/periph_ctrl.h"
 #include "soc/rtc.h"
 #include <soc/sens_reg.h>
 #include "esp_log.h"
-#include "driver/sigmadelta.h"
 
 
 #include "soundgen.h"
@@ -462,7 +460,9 @@ SoundGenerator::SoundGenerator(int sampleRate, gpio_num_t gpio, SoundGenMethod g
     m_DMAChain(nullptr),
     m_genMethod(genMethod),
     m_initDone(false),
-    m_timerHandle(nullptr)
+    m_timerHandle(nullptr),
+    m_dac_handle(nullptr),
+    m_sdm_handle(nullptr)
 {
 }
 
@@ -579,20 +579,24 @@ void SoundGenerator::dac_init()
   I2S0.out_link.start = 1;
   I2S0.conf.tx_start  = 1;
 
-  dac_i2s_enable();
-  dac_output_enable(m_gpio == GPIO_NUM_25 ? DAC_CHANNEL_1 : DAC_CHANNEL_2);
+  // IDF 5.x: enable DAC output channel via new oneshot API
+  dac_channel_t dac_chan = (m_gpio == GPIO_NUM_25) ? DAC_CHAN_0 : DAC_CHAN_1;
+  dac_oneshot_config_t dac_cfg = { .chan_id = dac_chan };
+  dac_oneshot_new_channel(&dac_cfg, &m_dac_handle);
   #endif
 }
 
 
 void SoundGenerator::sigmadelta_init()
 {
-  sigmadelta_config_t sigmadelta_cfg;
-  sigmadelta_cfg.channel             = SIGMADELTA_CHANNEL_0;
-  sigmadelta_cfg.sigmadelta_prescale = 10;
-  sigmadelta_cfg.sigmadelta_duty     = 0;
-  sigmadelta_cfg.sigmadelta_gpio     = m_gpio;
-  sigmadelta_config(&sigmadelta_cfg);
+  sdm_config_t sdm_cfg = {
+    .gpio_num    = m_gpio,
+    .clk_src     = SDM_CLK_SRC_DEFAULT,
+    .sample_rate_hz = 1000000,
+    .flags       = { .invert_out = 0, .io_loop_back = 0 },
+  };
+  sdm_new_channel(&sdm_cfg, &m_sdm_handle);
+  sdm_channel_enable(m_sdm_handle);
 
   esp_timer_create_args_t args = { };
   args.callback        = timerHandler;
@@ -770,7 +774,8 @@ void SoundGenerator::timerHandler(void * args)
 {
   auto soundGenerator = (SoundGenerator *) args;
 
-  sigmadelta_set_duty(SIGMADELTA_CHANNEL_0, soundGenerator->getSample());
+  if (soundGenerator->m_sdm_handle)
+    sdm_channel_set_duty(soundGenerator->m_sdm_handle, (int8_t)soundGenerator->getSample());
 }
 
 

@@ -30,6 +30,7 @@
 
 #include "esp32/ulp.h"
 #include "driver/rtc_io.h"
+#include "soc/rtc_io_reg.h"
 #include "soc/sens_reg.h"
 #if __has_include("soc/rtc_io_periph.h")
   #include "soc/rtc_io_periph.h"

@@ -36,6 +36,8 @@
 #include "soc/dport_reg.h"
 #include "soc/rtc.h"
 #include "esp_intr_alloc.h"
+#include "esp_rom_gpio.h"
+#include "esp_private/periph_ctrl.h"
  
 #include "serialport.h"
  
@@ -181,29 +183,25 @@ void SerialPort::setup(int uartIndex, uint32_t baud, int dataLength, char parity
     m_idx = uartIndex;
     m_dev = (volatile uart_dev_t *) UART_BASE[m_idx];
     
+    static const periph_module_t s_uart_modules[] = { PERIPH_UART0_MODULE, PERIPH_UART1_MODULE, PERIPH_UART2_MODULE };
     switch (m_idx) {
       case 0:
         #ifdef ARDUINO
         Serial.end();
         #endif
-        DPORT_SET_PERI_REG_MASK(DPORT_PERIP_CLK_EN_REG, DPORT_UART_CLK_EN);
-        DPORT_CLEAR_PERI_REG_MASK(DPORT_PERIP_RST_EN_REG, DPORT_UART_RST);
         break;
       case 1:
         #ifdef ARDUINO
         Serial1.end();
         #endif
-        DPORT_SET_PERI_REG_MASK(DPORT_PERIP_CLK_EN_REG, DPORT_UART1_CLK_EN);
-        DPORT_CLEAR_PERI_REG_MASK(DPORT_PERIP_RST_EN_REG, DPORT_UART1_RST);
         break;
       case 2:
         #ifdef ARDUINO
         Serial2.end();
         #endif
-        DPORT_SET_PERI_REG_MASK(DPORT_PERIP_CLK_EN_REG, DPORT_UART2_CLK_EN);
-        DPORT_CLEAR_PERI_REG_MASK(DPORT_PERIP_RST_EN_REG, DPORT_UART2_RST);
         break;
     }
+    periph_module_enable(s_uart_modules[m_idx]);
     
     // flush
     uartFlushTXFIFO();
@@ -238,8 +236,8 @@ void SerialPort::setup(int uartIndex, uint32_t baud, int dataLength, char parity
   setFrame(dataLength, parity, stopBits);
 
   // TX/RX Pin logic
-  gpio_matrix_in(m_rxPin, URXD_IN_IDX[m_idx], m_inverted);
-  gpio_matrix_out(m_txPin, UTXD_OUT_IDX[m_idx], m_inverted, false);
+  esp_rom_gpio_connect_in_signal(m_rxPin, URXD_IN_IDX[m_idx], m_inverted);
+  esp_rom_gpio_connect_out_signal(m_txPin, UTXD_OUT_IDX[m_idx], m_inverted, false);
 
   // Flow Control
   WRITE_PERI_REG(UART_FLOW_CONF_REG(m_idx), 0);
@@ -335,16 +333,16 @@ void SerialPort::send(uint8_t value)
 
 void SerialPort::sendBreak(bool value)
 {
-  constexpr int MATRIX_DETACH_OUT_SIG = 0x100;
+  constexpr int MATRIX_DETACH_OUT_SIG = SIG_GPIO_OUT_IDX;
 
   while (m_dev->status.txfifo_cnt == 0x7F)
     ;
   if (value) {
-    gpio_matrix_out(m_txPin, MATRIX_DETACH_OUT_SIG, m_inverted, false);
+    esp_rom_gpio_connect_out_signal(m_txPin, MATRIX_DETACH_OUT_SIG, m_inverted, false);
     configureGPIO(m_txPin, GPIO_MODE_OUTPUT);
     gpio_set_level(m_txPin, 0);
   } else {
-    gpio_matrix_out(m_txPin, UTXD_OUT_IDX[m_idx], m_inverted, false);
+    esp_rom_gpio_connect_out_signal(m_txPin, UTXD_OUT_IDX[m_idx], m_inverted, false);
   }
 }
 

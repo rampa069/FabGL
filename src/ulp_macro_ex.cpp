@@ -141,12 +141,12 @@ static esp_err_t do_single_reloc(ulp_insn_t* program, uint32_t load_addr,
         case SUB_OPCODE_STAGEB:
         case SUB_OPCODE_B: {
             int32_t offset = ((int32_t) label_info.addr) - ((int32_t) branch_info.addr);
-ESP_LOGW(TAG, "%d\n", offset);
+ESP_LOGW(TAG, "%d\n", (int)offset);
             uint32_t abs_offset = abs(offset);
             uint32_t sign = (offset >= 0) ? 0 : 1;
             if (abs_offset > 127) {
                 ESP_LOGE(TAG, "target out of range: branch from %x to %x",
-                        branch_info.addr, label_info.addr);
+                        (unsigned)branch_info.addr, (unsigned)label_info.addr);
                 return ESP_ERR_ULP_BRANCH_OUT_OF_RANGE;
             }
             insn->b.offset = abs_offset;
@@ -182,12 +182,12 @@ esp_err_t ulp_process_macros_and_load_ex(uint32_t load_addr, const ulp_insn_t* p
     const size_t ulp_mem_end = CONFIG_ULP_COPROC_RESERVE_MEM / sizeof(ulp_insn_t);
     if (load_addr > ulp_mem_end) {
         ESP_LOGE(TAG, "invalid load address %x, max is %x",
-                load_addr, ulp_mem_end);
+                (unsigned)load_addr, (unsigned)ulp_mem_end);
         return ESP_ERR_ULP_INVALID_LOAD_ADDR;
     }
     if (real_program_size + load_addr > ulp_mem_end) {
         ESP_LOGE(TAG, "program too big: %d words, max is %d words",
-                real_program_size, ulp_mem_end);
+                (int)real_program_size, (int)ulp_mem_end);
         return ESP_ERR_ULP_SIZE_TOO_BIG;
     }
     // If no macros found, copy the program and return.

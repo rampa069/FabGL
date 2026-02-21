@@ -45,7 +45,7 @@
 #define TFT_BACKGROUND_PRIMITIVE_TIMEOUT 10000  // uS
 
 #define TFT_SPI_MODE                     3
-#define TFT_DMACHANNEL                   2
+#define TFT_DMACHANNEL                   SPI_DMA_CH_AUTO
 
 
 
@@ -205,7 +205,7 @@ void TFTController::begin(int SCK, int MOSI, int DC, int RESX, int CS, int host,
 
 void TFTController::begin()
 {
-  begin(18, 23, 22, 21, 5, VSPI_HOST);
+  begin(18, 23, 22, 21, 5, SPI3_HOST);
 }
 
 

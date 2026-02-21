@@ -32,7 +32,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
-#include "esp_spi_flash.h"
+
 
 #include "fabutils.h"
 #include "cvbs16controller.h"
@@ -549,7 +549,7 @@ void IRAM_ATTR CVBS16Controller::drawScanlineX1(void * arg, uint16_t * dest, int
 
   }
 
-  if (CVBSGenerator::VSync() && !ctrl->m_primitiveProcessingSuspended && spi_flash_cache_enabled() && ctrl->m_primitiveExecTask) {
+  if (CVBSGenerator::VSync() && !ctrl->m_primitiveProcessingSuspended && true && ctrl->m_primitiveExecTask) {
     // vertical sync, unlock primitive execution task
     // warn: don't use vTaskSuspendAll() in primitive drawing, otherwise vTaskNotifyGiveFromISR may be blocked and screen will flick!
     vTaskNotifyGiveFromISR(ctrl->m_primitiveExecTask, NULL);
@@ -624,7 +624,7 @@ void IRAM_ATTR CVBS16Controller::drawScanlineX2(void * arg, uint16_t * dest, int
 
   }
 
-  if (CVBSGenerator::VSync() && !ctrl->m_primitiveProcessingSuspended && spi_flash_cache_enabled() && ctrl->m_primitiveExecTask) {
+  if (CVBSGenerator::VSync() && !ctrl->m_primitiveProcessingSuspended && true && ctrl->m_primitiveExecTask) {
     // vertical sync, unlock primitive execution task
     // warn: don't use vTaskSuspendAll() in primitive drawing, otherwise vTaskNotifyGiveFromISR may be blocked and screen will flick!
     vTaskNotifyGiveFromISR(ctrl->m_primitiveExecTask, NULL);
@@ -696,7 +696,7 @@ void IRAM_ATTR CVBS16Controller::drawScanlineX3(void * arg, uint16_t * dest, int
 
   }
 
-  if (CVBSGenerator::VSync() && !ctrl->m_primitiveProcessingSuspended && spi_flash_cache_enabled() && ctrl->m_primitiveExecTask) {
+  if (CVBSGenerator::VSync() && !ctrl->m_primitiveProcessingSuspended && true && ctrl->m_primitiveExecTask) {
     // vertical sync, unlock primitive execution task
     // warn: don't use vTaskSuspendAll() in primitive drawing, otherwise vTaskNotifyGiveFromISR may be blocked and screen will flick!
     vTaskNotifyGiveFromISR(ctrl->m_primitiveExecTask, NULL);

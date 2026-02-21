@@ -35,9 +35,9 @@
 
 #include "soc/i2s_struct.h"
 #include "soc/i2s_reg.h"
-#include "driver/periph_ctrl.h"
+#include "esp_private/periph_ctrl.h"
 #include "soc/rtc.h"
-#include "esp_spi_flash.h"
+
 #include "esp_heap_caps.h"
 
 #include "fabutils.h"
@@ -515,7 +515,7 @@ void IRAM_ATTR VGA4Controller::ISRHandler(void * arg)
 
     s_scanLine += VGA4_LinesCount / 2;
 
-    if (scanLine >= height && !ctrl->m_primitiveProcessingSuspended && spi_flash_cache_enabled() && ctrl->m_primitiveExecTask) {
+    if (scanLine >= height && !ctrl->m_primitiveProcessingSuspended && true && ctrl->m_primitiveExecTask) {
       // vertical sync, unlock primitive execution task
       // warn: don't use vTaskSuspendAll() in primitive drawing, otherwise vTaskNotifyGiveFromISR may be blocked and screen will flick!
       vTaskNotifyGiveFromISR(ctrl->m_primitiveExecTask, NULL);

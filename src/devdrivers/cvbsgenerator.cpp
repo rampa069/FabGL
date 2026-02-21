@@ -29,9 +29,8 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
-#include "driver/dac.h"
 #include "soc/i2s_reg.h"
-#include "driver/periph_ctrl.h"
+#include "esp_private/periph_ctrl.h"
 #include "soc/rtc.h"
 #include <soc/sens_reg.h>
 
@@ -279,6 +278,7 @@ CVBSGenerator::CVBSGenerator() :
   m_ssyncBuf(nullptr),
   m_lineBuf(nullptr),
   m_isr_handle(nullptr),
+  m_dac_handle{nullptr, nullptr},
   m_drawScanlineCallback(nullptr),
   m_subCarrierPhases(),
   m_params(nullptr)
@@ -355,7 +355,8 @@ void CVBSGenerator::runDMA(lldesc_t volatile * dmaBuffers)
       I2S0.clkm_conf.clkm_div_a            = a;
       I2S0.clkm_conf.clkm_div_num          = 2;  // not less than 2
       I2S0.sample_rate_conf.tx_bck_div_num = 1;  // this makes I2S0O_BCK = I2S0_CLK
-      rtc_clk_apll_enable(true, p.sdm0, p.sdm1, p.sdm2, p.o_div);
+      rtc_clk_apll_coeff_set(p.o_div, p.sdm0, p.sdm1, p.sdm2);
+      rtc_clk_apll_enable(true);
       I2S0.clkm_conf.clka_en               = 1;
     }
 
@@ -378,14 +379,19 @@ void CVBSGenerator::runDMA(lldesc_t volatile * dmaBuffers)
     I2S0.out_link.start = 1;
     I2S0.conf.tx_start  = 1;
 
-    dac_i2s_enable();
+    // IDF 5.x: enable DAC output channel(s) via new oneshot API
     if (usePLL) {
       // enable both DACs
-      dac_output_enable(DAC_CHANNEL_1); // GPIO25: DAC1, right channel
-      dac_output_enable(DAC_CHANNEL_2); // GPIO26: DAC2, left channel
+      dac_oneshot_config_t dac_cfg0 = { .chan_id = DAC_CHAN_0 };
+      dac_oneshot_new_channel(&dac_cfg0, &m_dac_handle[0]);
+      dac_oneshot_config_t dac_cfg1 = { .chan_id = DAC_CHAN_1 };
+      dac_oneshot_new_channel(&dac_cfg1, &m_dac_handle[1]);
     } else {
       // enable just used DAC
-      dac_output_enable(m_gpio == GPIO_NUM_25 ? DAC_CHANNEL_1 : DAC_CHANNEL_2);
+      dac_channel_t dac_chan = (m_gpio == GPIO_NUM_25) ? DAC_CHAN_0 : DAC_CHAN_1;
+      int idx = (dac_chan == DAC_CHAN_0) ? 0 : 1;
+      dac_oneshot_config_t dac_cfg = { .chan_id = dac_chan };
+      dac_oneshot_new_channel(&dac_cfg, &m_dac_handle[idx]);
     }
 
     m_DMAStarted = true;

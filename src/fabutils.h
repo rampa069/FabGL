@@ -41,11 +41,17 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 
-#include <driver/adc.h>
+#include "driver/gpio.h"
+#include "esp_timer.h"
+#include "esp_adc/adc_oneshot.h"
 #include <esp_system.h>
 #include "sdmmc_cmd.h"
 #include "soc/frc_timer_reg.h"
-#include "rom/lldesc.h"
+#if __has_include("esp32/rom/lldesc.h")
+  #include "esp32/rom/lldesc.h"
+#else
+  #include "rom/lldesc.h"
+#endif
 
 #ifdef ARDUINO
 #include "Arduino.h"
@@ -1073,7 +1079,7 @@ inline __attribute__((always_inline)) uint32_t getCycleCount() {
 void replacePathSep(char * path, char newSep);
 
 
-adc1_channel_t ADC1_GPIO2Channel(gpio_num_t gpio);
+adc_channel_t ADC1_GPIO2Channel(gpio_num_t gpio);
 
 
 void esp_intr_alloc_pinnedToCore(int source, int flags, intr_handler_t handler, void * arg, intr_handle_t * ret_handle, int core);

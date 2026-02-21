@@ -43,6 +43,7 @@ extern "C" {
 #include "soc/efuse_reg.h"
 #include "soc/rtc.h"
 #include "esp_ipc.h"
+#include "esp_rom_gpio.h"
 #include "soc/adc_channel.h"
 
 #include "fabutils.h"
@@ -170,27 +171,18 @@ ChipPackage getChipPackage()
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-adc1_channel_t ADC1_GPIO2Channel(gpio_num_t gpio)
+adc_channel_t ADC1_GPIO2Channel(gpio_num_t gpio)
 {
   switch (gpio) {
-    case ADC1_CHANNEL_0_GPIO_NUM:
-      return ADC1_CHANNEL_0;
-    case ADC1_CHANNEL_1_GPIO_NUM:
-      return ADC1_CHANNEL_1;
-    case ADC1_CHANNEL_2_GPIO_NUM:
-      return ADC1_CHANNEL_2;
-    case ADC1_CHANNEL_3_GPIO_NUM:
-      return ADC1_CHANNEL_3;
-    case ADC1_CHANNEL_4_GPIO_NUM:
-      return ADC1_CHANNEL_4;
-    case ADC1_CHANNEL_5_GPIO_NUM:
-      return ADC1_CHANNEL_5;
-    case ADC1_CHANNEL_6_GPIO_NUM:
-      return ADC1_CHANNEL_6;
-    case ADC1_CHANNEL_7_GPIO_NUM:
-      return ADC1_CHANNEL_7;
-    default:
-      return ADC1_CHANNEL_0;
+    case ADC1_CHANNEL_0_GPIO_NUM: return ADC_CHANNEL_0;
+    case ADC1_CHANNEL_1_GPIO_NUM: return ADC_CHANNEL_1;
+    case ADC1_CHANNEL_2_GPIO_NUM: return ADC_CHANNEL_2;
+    case ADC1_CHANNEL_3_GPIO_NUM: return ADC_CHANNEL_3;
+    case ADC1_CHANNEL_4_GPIO_NUM: return ADC_CHANNEL_4;
+    case ADC1_CHANNEL_5_GPIO_NUM: return ADC_CHANNEL_5;
+    case ADC1_CHANNEL_6_GPIO_NUM: return ADC_CHANNEL_6;
+    case ADC1_CHANNEL_7_GPIO_NUM: return ADC_CHANNEL_7;
+    default:                      return ADC_CHANNEL_0;
   }
 }
 
@@ -200,7 +192,7 @@ adc1_channel_t ADC1_GPIO2Channel(gpio_num_t gpio)
 void configureGPIO(gpio_num_t gpio, gpio_mode_t mode)
 {
   #ifndef FABGL_EMULATED
-  PIN_FUNC_SELECT(GPIO_PIN_MUX_REG[gpio], PIN_FUNC_GPIO);
+  esp_rom_gpio_pad_select_gpio(gpio);
   gpio_set_direction(gpio, mode);
   #endif
 }
@@ -1177,7 +1169,8 @@ bool FileBrowser::format(DriveType driveType, int drive)
 
 bool FileBrowser::format(DriveType driveType, int drive)
 {
-  esp_task_wdt_init(45, false);
+  const esp_task_wdt_config_t wdt_cfg = { .timeout_ms = 45000, .idle_core_mask = 0, .trigger_panic = false };
+  esp_task_wdt_init(&wdt_cfg);
 
   if (driveType == DriveType::SDCard && s_SDCardMounted) {
 
@@ -1197,7 +1190,8 @@ bool FileBrowser::format(DriveType driveType, int drive)
     }
 
     // make filesystem
-    if (f_mkfs(drv, FM_ANY, 16 * 1024, buffer, FF_MAX_SS) != FR_OK) {
+    MKFS_PARM mkfs_opt = { .fmt = FM_ANY, .au_size = 16 * 1024 };
+    if (f_mkfs(drv, &mkfs_opt, buffer, FF_MAX_SS) != FR_OK) {
       free(buffer);
       return false;
     }
@@ -1258,7 +1252,7 @@ bool FileBrowser::mountSDCard(bool formatOnFail, char const * mountPath, size_t 
   s_SDCardMounted            = false;
 
   sdmmc_host_t host = SDSPI_HOST_DEFAULT();
-  host.slot = HSPI_HOST;
+  host.slot = SPI2_HOST;
 
   #if FABGL_ESP_IDF_VERSION <= FABGL_ESP_IDF_VERSION_VAL(3, 3, 5)
 
@@ -1286,7 +1280,7 @@ bool FileBrowser::mountSDCard(bool formatOnFail, char const * mountPath, size_t 
   bus_cfg.quadwp_io_num    = -1;
   bus_cfg.quadhd_io_num    = -1;
   bus_cfg.max_transfer_sz  = 4000;
-  auto r = spi_bus_initialize((spi_host_device_t)host.slot, &bus_cfg, 2);
+  auto r = spi_bus_initialize((spi_host_device_t)host.slot, &bus_cfg, SPI_DMA_CH_AUTO);
 
   if (r == ESP_OK || r == ESP_ERR_INVALID_STATE) {  // ESP_ERR_INVALID_STATE, maybe spi_bus_initialize already called
     sdspi_device_config_t slot_config = SDSPI_DEVICE_CONFIG_DEFAULT();
