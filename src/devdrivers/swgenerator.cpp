@@ -208,8 +208,13 @@ void GPIOStream::setupClock(int freq)
   
   I2S1.sample_rate_conf.tx_bck_div_num = 1; // this makes I2S1O_BCK = I2S1_CLK
 
-  rtc_clk_apll_coeff_set(p.o_div, p.sdm0, p.sdm1, p.sdm2);
+  // Enable APLL (and power up the internal analog I2C bus) BEFORE calling
+  // rtc_clk_apll_coeff_set(). The calibration spin-wait inside coeff_set reads
+  // I2C_APLL_OR_CAL_END via the analog I2C bus; if the bus is powered down the
+  // bit never asserts and the loop runs forever. rtc_clk_apll_enable() calls
+  // clk_ll_i2c_pu() which powers the bus up, so it must come first.
   rtc_clk_apll_enable(true);
+  rtc_clk_apll_coeff_set(p.o_div, p.sdm0, p.sdm1, p.sdm2);
 
   I2S1.clkm_conf.clka_en = 1;
 }

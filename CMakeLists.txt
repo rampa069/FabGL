@@ -24,7 +24,13 @@ idf_component_register(SRC_DIRS src
                                 esp_driver_dac
                                 esp_driver_sdm
                                 esp_hw_support
-                                 esp_rom
-                                 esp_timer
-                                 esp_http_client
-                                 driver)
+                                esp_rom
+                                esp_timer
+                                esp_http_client
+                                driver)
+
+# ESP-IDF 5.x: ULP FSM headers are not exported by the ulp component by default
+target_include_directories(__idf_fabgl PRIVATE
+    $ENV{IDF_PATH}/components/ulp/ulp_fsm/include
+    $ENV{IDF_PATH}/components/ulp/ulp_common/include
+)
